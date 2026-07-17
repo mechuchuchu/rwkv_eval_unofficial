@@ -6,7 +6,8 @@ import json
 import re
 from typing import Any
 
-ROLE_STOPS = ("\n\nUser:", "\n\nSystem:", "\n\nAssistant:")
+ROLE_STOPS = ("\n\nUser:", "\n\nSystem:", "\n\nAssistant:","\n\n")
+
 
 
 def clean_text(text: str) -> str:
