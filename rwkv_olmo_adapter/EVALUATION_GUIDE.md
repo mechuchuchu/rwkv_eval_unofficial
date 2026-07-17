@@ -2,7 +2,7 @@
 
 This guide evaluates an RWKV-7 G1-series checkpoint with:
 
-- **Albatross** as the RWKV inference engine;
+- **Albatross** as the RWKV inference engine; **Please note that the repository name has been changed from 'albatross' to 'rwkv eval unofficial'.**
 - **RWKV–OLMo adapter** as a vLLM-compatible HTTP bridge; and
 - **OLMo Eval** as the task, scoring, and result-management framework.
 
