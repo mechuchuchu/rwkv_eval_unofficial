@@ -1,0 +1,154 @@
+
+[34m╭─[0m[34m───────────────────────────────────────────────[0m[34m Runtime Environment [0m[34m────────────────────────────────────────────────[0m[34m─╮[0m
+[34m│[0m [1m [0m[1mPython              [0m[1m [0m 3.12.3                                                                                        [34m│[0m
+[34m│[0m [1m [0m[1mPyTorch             [0m[1m [0m 2.10.0+cu128                                                                                  [34m│[0m
+[34m│[0m [1m [0m[1mCUDA available      [0m[1m [0m True                                                                                          [34m│[0m
+[34m│[0m [1m [0m[1mCUDA version        [0m[1m [0m 12.8                                                                                          [34m│[0m
+[34m│[0m [1m [0m[1mcuDNN version       [0m[1m [0m 91002                                                                                         [34m│[0m
+[34m│[0m [1m [0m[1mGPU count           [0m[1m [0m 1                                                                                             [34m│[0m
+[34m│[0m [1m [0m[1m  GPU 0             [0m[1m [0m NVIDIA GeForce RTX 5090                                                                       [34m│[0m
+[34m│[0m [1m [0m[1mTransformers        [0m[1m [0m 5.7.0                                                                                         [34m│[0m
+[34m│[0m [1m [0m[1mvLLM                [0m[1m [0m 0.19.1                                                                                        [34m│[0m
+[34m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯[0m
+
+[36m╭─[0m[36m────────────────────────────────────────────────[0m[36m [0m[1;36mRun Configuration[0m[36m [0m[36m─────────────────────────────────────────────────[0m[36m─╮[0m
+[36m│[0m [1;35mRunConfig[0m[1m([0m                                                                                                           [36m│[0m
+[36m│[0m     [33mharness_config[0m=[1;35mHarnessConfig[0m[1m([0m                                                                                    [36m│[0m
+[36m│[0m         [33mname[0m=[32m'default'[0m,                                                                                              [36m│[0m
+[36m│[0m         [33mprovider[0m=[1;35mProviderConfig[0m[1m([0m                                                                                     [36m│[0m
+[36m│[0m             [33mkind[0m=[1m<[0m[1;95mProviderKind.VLLM_SERVER:[0m[39m [0m[32m'vllm_server'[0m[39m>,[0m                                                          [36m│[0m
+[36m│[0m [39m            [0m[33mmodel[0m[39m=[0m[32m'rwkv7-g1h-1.5b'[0m[39m,[0m                                                                                  [36m│[0m
+[36m│[0m [39m            [0m[33mbase_url[0m[39m=[0m[32m'http://127.0.0.1:8000/v1'[0m[39m,[0m                                                                     [36m│[0m
+[36m│[0m [39m            [0m[33mforce_download[0m[39m=[0m[3;91mFalse[0m[39m,[0m                                                                                    [36m│[0m
+[36m│[0m [39m            [0m[33mtrust_remote_code[0m[39m=[0m[3;91mFalse[0m[39m,[0m                                                                                 [36m│[0m
+[36m│[0m [39m            [0m[33mdtype[0m[39m=[0m[32m'auto'[0m[39m,[0m                                                                                            [36m│[0m
+[36m│[0m [39m            [0m[33mmax_model_len[0m[39m=[0m[1;36m10240[0m[39m,[0m                                                                                     [36m│[0m
+[36m│[0m [39m            [0m[33mmax_concurrency[0m[39m=[0m[1;36m1[0m[39m,[0m                                                                                       [36m│[0m
+[36m│[0m [39m            [0m[33mnum_instances[0m[39m=[0m[1;36m1[0m[39m,[0m                                                                                         [36m│[0m
+[36m│[0m [39m            [0m[33mkwargs[0m[39m=[0m[1;39m{[0m                                                                                                 [36m│[0m
+[36m│[0m [39m                [0m[32m'completion_use_prompt_token_ids'[0m[39m: [0m[3;92mTrue[0m                                                              [36m│[0m
+[36m│[0m [39m            [0m[1;39m}[0m                                                                                                        [36m│[0m
+[36m│[0m [39m        [0m[1;39m)[0m[39m,[0m                                                                                                           [36m│[0m
+[36m│[0m [39m        [0m[33mtool_choice[0m[39m=[0m[32m'auto'[0m[39m,[0m                                                                                          [36m│[0m
+[36m│[0m [39m        [0m[33mmetrics[0m[39m=[0m[1;35mMetricsConfig[0m[1;39m([0m                                                                                       [36m│[0m
+[36m│[0m [39m            [0m[33menabled[0m[39m=[0m[3;92mTrue[0m[39m,[0m                                                                                            [36m│[0m
+[36m│[0m [39m            [0m[33mreporters[0m[39m=[0m[1;39m([0m                                                                                              [36m│[0m
+[36m│[0m [39m                <ReporterType.FILE: [0m[32m'file'[0m[39m>,[0m                                                                         [36m│[0m
+[36m│[0m [39m            [0m[1;39m)[0m[39m,[0m                                                                                                       [36m│[0m
+[36m│[0m [39m            [0m[33mcollect_gpu[0m[39m=[0m[3;91mFalse[0m[39m,[0m                                                                                       [36m│[0m
+[36m│[0m [39m            [0m[33mcollect_vllm_server[0m[39m=[0m[3;91mFalse[0m[39m,[0m                                                                               [36m│[0m
+[36m│[0m [39m            [0m[33mvllm_poll_interval_s[0m[39m=[0m[1;36m10[0m[1;36m.0[0m                                                                                [36m│[0m
+[36m│[0m [39m        [0m[1;39m)[0m[39m,[0m                                                                                                           [36m│[0m
+[36m│[0m [39m        [0m[33mbatching[0m[39m=[0m[1;35mBatchConfig[0m[1;39m([0m                                                                                        [36m│[0m
+[36m│[0m [39m            [0m[33mstrategy[0m[39m=<BatchStrategy.BATCHED: [0m[32m'batched'[0m[39m>,[0m                                                             [36m│[0m
+[36m│[0m [39m            [0m[33mchunk_size[0m[39m=[0m[1;36m64[0m[39m,[0m                                                                                           [36m│[0m
+[36m│[0m [39m            [0m[33mchunk_timeout[0m[39m=[0m[1;36m5[0m[1;36m.0[0m                                                                                        [36m│[0m
+[36m│[0m [39m        [0m[1;39m)[0m                                                                                                            [36m│[0m
+[36m│[0m [39m    [0m[1;39m)[0m[39m,[0m                                                                                                               [36m│[0m
+[36m│[0m [39m    [0m[33mtasks[0m[39m=[0m[1;39m[[0m                                                                                                          [36m│[0m
+[36m│[0m [39m        [0m[1;35mTaskConfig[0m[1;39m([0m                                                                                                  [36m│[0m
+[36m│[0m [39m            [0m[33mname[0m[39m=[0m[32m'gpqa_diamond'[0m[39m,[0m                                                                                     [36m│[0m
+[36m│[0m [39m            [0m[33mdata_source[0m[39m=[0m[1;35mDataSource[0m[1;39m([0m                                                                                  [36m│[0m
+[36m│[0m [39m                [0m[33mpath[0m[39m=[0m[32m'Idavidrein/gpqa'[0m[39m,[0m                                                                              [36m│[0m
+[36m│[0m [39m                [0m[33msubset[0m[39m=[0m[32m'gpqa_diamond'[0m[39m,[0m                                                                               [36m│[0m
+[36m│[0m [39m                [0m[33msplit[0m[39m=[0m[32m'test'[0m[39m,[0m                                                                                        [36m│[0m
+[36m│[0m [39m                [0m[33msource_type[0m[39m=<SourceType.HF: [0m[32m'hf'[0m[39m>[0m                                                                    [36m│[0m
+[36m│[0m [39m            [0m[1;39m)[0m[39m,[0m                                                                                                       [36m│[0m
+[36m│[0m [39m            [0m[33mformatter[0m[39m=[0m[1;35mMCQAChatFormatter[0m[1;39m([0m                                                                             [36m│[0m
+[36m│[0m [39m                [0m[33msystem_prompt[0m[39m=[0m[32m'You are an expert scientist. Answer the following multiple choice question by [0m        [36m│[0m
+[36m│[0m [32mreasoning through the problem step by step, then selecting the best answer.\n\nEnd your response with "ANSWER: X" [0m   [36m│[0m
+[36m│[0m [32mwhere X is the letter of your chosen answer.'[0m                                                                        [36m│[0m
+[36m│[0m [39m            [0m[1;39m)[0m[39m,[0m                                                                                                       [36m│[0m
+[36m│[0m [39m            [0m[33mmetrics[0m[39m=[0m[1;39m([0m                                                                                                [36m│[0m
+[36m│[0m [39m                [0m[1;35mAccuracyMetric[0m[1;39m([0m                                                                                      [36m│[0m
+[36m│[0m [39m                    [0m[33mname[0m[39m=[0m[32m'accuracy'[0m[39m,[0m                                                                                 [36m│[0m
+[36m│[0m [39m                    [0m[33mscorer[0m[39m=<class [0m[32m'olmo_eval.common.scorers.base.MultipleChoiceScorer'[0m[39m>[0m                              [36m│[0m
+[36m│[0m [39m                [0m[1;39m)[0m[39m,[0m                                                                                                   [36m│[0m
+[36m│[0m [39m            [0m[1;39m)[0m[39m,[0m                                                                                                       [36m│[0m
+[36m│[0m [39m            [0m[33mnum_fewshot[0m[39m=[0m[1;36m0[0m[39m,[0m                                                                                           [36m│[0m
+[36m│[0m [39m            [0m[33mfewshot_seed[0m[39m=[0m[1;36m42[0m[39m,[0m                                                                                         [36m│[0m
+[36m│[0m [39m            [0m[33mseed[0m[39m=[0m[1;36m42[0m[39m,[0m                                                                                                 [36m│[0m
+[36m│[0m [39m            [0m[33msplit[0m[39m=<Split.TRAIN: [0m[32m'train'[0m[39m>,[0m                                                                            [36m│[0m
+[36m│[0m [39m            [0m[33mprimary_metric[0m[39m=[0m[1;35mAccuracyMetric[0m[1;39m([0m                                                                           [36m│[0m
+[36m│[0m [39m                [0m[33mname[0m[39m=[0m[32m'accuracy'[0m[39m,[0m                                                                                     [36m│[0m
+[36m│[0m [39m                [0m[33mscorer[0m[39m=<class [0m[32m'olmo_eval.common.scorers.base.MultipleChoiceScorer'[0m[39m>[0m                                  [36m│[0m
+[36m│[0m [39m            [0m[1;39m)[0m[39m,[0m                                                                                                       [36m│[0m
+[36m│[0m [39m            [0m[33msampling_params[0m[39m=[0m[1;35mSamplingParams[0m[1;39m([0m                                                                          [36m│[0m
+[36m│[0m [39m                [0m[33mmax_tokens[0m[39m=[0m[1;36m1024[0m[39m,[0m                                                                                     [36m│[0m
+[36m│[0m [39m                [0m[33mtemperature[0m[39m=[0m[1;36m0[0m[1;36m.0[0m[39m,[0m                                                                                     [36m│[0m
+[36m│[0m [39m                [0m[33mnum_samples[0m[39m=[0m[1;36m1[0m[39m,[0m                                                                                       [36m│[0m
+[36m│[0m [39m                [0m[33mdo_sample[0m[39m=[0m[3;92mTrue[0m                                                                                       [36m│[0m
+[36m│[0m [39m            [0m[1;39m)[0m[39m,[0m                                                                                                       [36m│[0m
+[36m│[0m [39m            [0m[33moutput_score_aggregation[0m[39m=<OutputScoreAggregation.MAX: [0m[32m'max'[0m[1m>[0m,                                            [36m│[0m
+[36m│[0m             [33msandbox_allocation_weight[0m=[1;36m1[0m[1;36m.0[0m                                                                            [36m│[0m
+[36m│[0m         [1m)[0m                                                                                                            [36m│[0m
+[36m│[0m     [1m][0m,                                                                                                               [36m│[0m
+[36m│[0m     [33moutput_dir[0m=[32m'/workspace/results/rwkv7-g1h-1.5b/gpqa_diamond-smoke'[0m,                                               [36m│[0m
+[36m│[0m     [33mstore[0m=[3;91mFalse[0m,                                                                                                     [36m│[0m
+[36m│[0m     [33ms3_bucket[0m=[3;35mNone[0m,                                                                                                  [36m│[0m
+[36m│[0m     [33ms3_prefix[0m=[3;35mNone[0m,                                                                                                  [36m│[0m
+[36m│[0m     [33ms3_group[0m=[3;35mNone[0m,                                                                                                   [36m│[0m
+[36m│[0m     [33ms3_endpoint_url[0m=[3;35mNone[0m,                                                                                            [36m│[0m
+[36m│[0m     [33ms3_region[0m=[32m'us-east-1'[0m,                                                                                           [36m│[0m
+[36m│[0m     [33mdb_host[0m=[32m'localhost'[0m,                                                                                             [36m│[0m
+[36m│[0m     [33mdb_port[0m=[1;36m5432[0m,                                                                                                    [36m│[0m
+[36m│[0m     [33mdb_name[0m=[32m'olmo_eval'[0m,                                                                                             [36m│[0m
+[36m│[0m     [33mdb_user[0m=[32m'postgres'[0m,                                                                                              [36m│[0m
+[36m│[0m     [33mexperiment_name[0m=[3;35mNone[0m,                                                                                            [36m│[0m
+[36m│[0m     [33mexperiment_group[0m=[3;35mNone[0m,                                                                                           [36m│[0m
+[36m│[0m     [33msave_predictions[0m=[3;92mTrue[0m,                                                                                           [36m│[0m
+[36m│[0m     [33msave_requests[0m=[3;92mTrue[0m,                                                                                              [36m│[0m
+[36m│[0m     [33minspect_instance[0m=[3;91mFalse[0m,                                                                                          [36m│[0m
+[36m│[0m     [33minspect_formatted[0m=[3;91mFalse[0m,                                                                                         [36m│[0m
+[36m│[0m     [33minspect_tokens[0m=[3;91mFalse[0m,                                                                                            [36m│[0m
+[36m│[0m     [33minspect_response[0m=[3;92mTrue[0m,                                                                                           [36m│[0m
+[36m│[0m     [33minspect_request[0m=[3;92mTrue[0m                                                                                             [36m│[0m
+[36m│[0m [1m)[0m                                                                                                                    [36m│[0m
+[36m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯[0m
+[3m                Tasks                [0m
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┓
+┃[1m [0m[1mTask        [0m[1m [0m┃[1m [0m[1mInstances[0m[1m [0m┃[1m [0m[1mStatus[0m[1m [0m┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━┩
+│[36m [0m[36mgpqa_diamond[0m[36m [0m│        20 │ [32mReady[0m  │
+└──────────────┴───────────┴────────┘
+[35m╭─[0m[35m────────────────────────────────────────────[0m[35m [0m[1;35mRequest #0[0m[35m (gpqa_diamond) [0m[35m─────────────────────────────────────────────[0m[35m─╮[0m
+[35m│[0m [1;36mrequest_type:[0m                                                                                                        [35m│[0m
+[35m│[0m CHAT                                                                                                                 [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m [1;36mmessages:[0m                                                                                                            [35m│[0m
+[35m│[0m [system]: You are an expert scientist. Answer the following multiple choice question by reasoning through the        [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m ... (34 chars omitted) ...                                                                                           [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m ng the best answer.                                                                                                  [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m End your response with "ANSWER: X" where X is the letter of your chosen answer.                                      [35m│[0m
+[35m│[0m [user]: Two quantum states with energies E1 and E2 have a lifetime of 10^-9 sec and 10^-8 sec, respectively.         [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m ... (116 chars omitted) ...                                                                                          [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m fference so that they can be clearly resolved?                                                                       [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m (A) 10^-9 eV                                                                                                         [35m│[0m
+[35m│[0m (B) 10^-11 eV                                                                                                        [35m│[0m
+[35m│[0m (C) 10^-8 eV                                                                                                         [35m│[0m
+[35m│[0m (D) 10^-4 eV                                                                                                         [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m [1;36msystem_prompt:[0m                                                                                                       [35m│[0m
+[35m│[0m You are an expert scientist. Answer the following multiple choice question by reasoning through the                  [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m ... (34 chars omitted) ...                                                                                           [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m ng the best answer.                                                                                                  [35m│[0m
+[35m│[0m                                                                                                                      [35m│[0m
+[35m│[0m End your response with "ANSWER: X" where X is the letter of your chosen answer.                                      [35m│[0m
+[35m│[0m (234 chars total)                                                                                                    [35m│[0m
+[35m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯[0m
+Could not load model config for rwkv7-g1h-1.5b: rwkv7-g1h-1.5b is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `hf auth login` or by passing `token=<your_token>`
+[3m                       Results Summary                        [0m
+┏━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┓
+┃[1m [0m[1mTask        [0m[1m [0m┃[1m [0m[1mStatus [0m[1m [0m┃[1m [0m[1mMetric                  [0m[1m [0m┃[1m [0m[1mResult[0m[1m [0m┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━┩
+│[36m [0m[36mgpqa_diamond[0m[36m [0m│ [32mSuccess[0m │ accuracy:multiple_choice │ 0.0500 │
+└──────────────┴─────────┴──────────────────────────┴────────┘
