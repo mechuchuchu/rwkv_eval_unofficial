@@ -6,7 +6,7 @@ import json
 import re
 from typing import Any
 
-ROLE_STOPS = ("\n\nUser:", "\n\nSystem:", "\n\nAssistant:","\n\n")
+ROLE_STOPS = ("\n\nUser:", "\n\nSystem:", "\n\nAssistant:")
 
 
 
