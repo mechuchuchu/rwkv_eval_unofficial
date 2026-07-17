@@ -217,13 +217,40 @@ def is_orig_linear_weight(key: str) -> bool:
 def load_extensions(wkv_mode: str = "fp16") -> None:
     t0 = time.perf_counter()
     log(f"loading CUDA extensions v3a_ops + fast_ops + wkv={wkv_mode}")
-    cuda_flags = ["-O3", "--use_fast_math", "--extra-device-vectorization"] + ([] if os.name == "nt" else ["-Xptxas", "-O3"])
-    load(name="rwkv7_v3a_ops", sources=[str(CUDA_DIR / "rwkv7_v3a_ops.cpp"), str(CUDA_DIR / "rwkv7_v3a_ops.cu")], is_python_module=False, verbose=False, extra_cflags=["-O3"], extra_cuda_cflags=cuda_flags)
-    load(name="rwkv7_fast_ops_fp16", sources=[str(CUDA_DIR / "rwkv7_fast_ops_fp16.cpp"), str(CUDA_DIR / "rwkv7_fast_ops_fp16.cu")], is_python_module=False, verbose=False, extra_cflags=["-O3"], extra_cuda_cflags=cuda_flags)
+    
+    # 1. 여기 아래의 cuda_flags에 ["-std=c++17"]을 강제로 추가합니다.
+    cuda_flags = ["-std=c++17", "-O3", "--use_fast_math", "--extra-device-vectorization"] + ([] if os.name == "nt" else ["-Xptxas", "-O3"])
+    
+    # 2. 각 load 함수의 extra_cflags에도 ["-O3", "-std=c++17"] 형태로 추가해 줍니다.
+    load(name="rwkv7_v3a_ops", 
+         sources=[str(CUDA_DIR / "rwkv7_v3a_ops.cpp"), str(CUDA_DIR / "rwkv7_v3a_ops.cu")], 
+         is_python_module=False, 
+         verbose=False, 
+         extra_cflags=["-O3", "-std=c++17"], # 수정
+         extra_cuda_cflags=cuda_flags)
+         
+    load(name="rwkv7_fast_ops_fp16", 
+         sources=[str(CUDA_DIR / "rwkv7_fast_ops_fp16.cpp"), str(CUDA_DIR / "rwkv7_fast_ops_fp16.cu")], 
+         is_python_module=False, 
+         verbose=False, 
+         extra_cflags=["-O3", "-std=c++17"], # 수정
+         extra_cuda_cflags=cuda_flags)
+         
     if wkv_mode == "fp16":
-        load(name="rwkv7_wkv_fp16_v2", sources=[str(CUDA_DIR / "rwkv7_wkv_fp16_v2.cpp"), str(CUDA_DIR / "rwkv7_wkv_fp16_v2.cu")], is_python_module=False, verbose=False, extra_cflags=["-O3"], extra_cuda_cflags=["-O3", "-res-usage", "--extra-device-vectorization", "-Xptxas", "-O3"])
+        load(name="rwkv7_wkv_fp16_v2", 
+             sources=[str(CUDA_DIR / "rwkv7_wkv_fp16_v2.cpp"), str(CUDA_DIR / "rwkv7_wkv_fp16_v2.cu")], 
+             is_python_module=False, 
+             verbose=False, 
+             extra_cflags=["-O3", "-std=c++17"], # 수정
+             extra_cuda_cflags=["-std=c++17", "-O3", "-res-usage", "--extra-device-vectorization", "-Xptxas", "-O3"]) # 수정
+             
     elif wkv_mode == "fp32io16":
-        load(name="rwkv7_wkv_fp32_v2", sources=[str(CUDA_DIR / "rwkv7_wkv_fp32_v2.cpp"), str(CUDA_DIR / "rwkv7_wkv_fp32_v2.cu")], is_python_module=False, verbose=False, extra_cflags=["-O3", "-D_IO_FP16_"], extra_cuda_cflags=["-O3", "--use_fast_math", "-Xptxas", "-O3", "-D_IO_FP16_"])
+        load(name="rwkv7_wkv_fp32_v2", 
+             sources=[str(CUDA_DIR / "rwkv7_wkv_fp32_v2.cpp"), str(CUDA_DIR / "rwkv7_wkv_fp32_v2.cu")], 
+             is_python_module=False, 
+             verbose=False, 
+             extra_cflags=["-O3", "-D_IO_FP16_", "-std=c++17"], # 수정
+             extra_cuda_cflags=["-std=c++17", "-O3", "--use_fast_math", "-Xptxas", "-O3", "-D_IO_FP16_"]) # 수정
     else:
         raise ValueError(f"unknown wkv_mode: {wkv_mode}")
     log(f"CUDA extensions loaded in {time.perf_counter() - t0:.3f}s")
@@ -1083,3 +1110,4 @@ def run_eval(model: RWKV7, eval_json: str, eval_out: str, logits_out: str, paths
 
 if __name__ == "__main__":
     main()
+
