@@ -8,7 +8,7 @@ set -euo pipefail
 : "${RWKV_TRANSFORMERS_REQUIREMENT:=transformers>=5.15,<5.16}"
 : "${DTYPE:=bfloat16}"
 : "${NUM_GPUS:=1}"
-: "${PARALLELISM:=1}"
+: "${PARALLELISM:=16}"
 export HF_HOME
 
 run_eval() {
