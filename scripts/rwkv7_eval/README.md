@@ -25,6 +25,10 @@ export OUTPUT_ROOT=/workspace/results/my-run
 export DTYPE=bfloat16
 ```
 
+The launcher adds a `transformers>=5.15,<5.16` overlay because the bundled
+RWKV-7 model code requires the multi-state cache API introduced in Transformers
+5.15. This keeps the repository's default vLLM environment unchanged.
+
 ## Running evaluations
 
 Run a single benchmark, for example ARC MC:
