@@ -34,6 +34,7 @@ _MODEL_HASH_IGNORED_PROVIDER_KWARGS = frozenset(
         # Keep request/template kwargs like default_chat_template_kwargs because they can
         # change the model's actual outputs.
         "attention_backend",
+        "batch_size",
         "enable_expert_parallel",
         "enable_prefix_caching",
         "force_download",

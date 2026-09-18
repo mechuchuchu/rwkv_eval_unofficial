@@ -252,6 +252,7 @@ class HuggingFaceProvider(InferenceProvider):
         multimodal: bool = False,
         max_crops: int = 24,
         autocast_dtype: str | None = None,
+        batch_size: int = 8,
         **model_kwargs,
     ) -> None:
         """Initialize the provider.
@@ -266,8 +267,12 @@ class HuggingFaceProvider(InferenceProvider):
                 ``torch.autocast`` with this dtype. Pair with fp32 weights (``dtype="float32"``)
                 to match mm_olmo's ``amp_bf16`` eval numerics (fp32 master weights + bf16
                 autocast); the model keeps attention in fp32 via its own ``float32_attention``.
+            batch_size: Maximum number of text requests processed in one model call.
             **model_kwargs: Additional arguments passed to from_pretrained.
         """
+        if batch_size < 1:
+            raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+
         # Strip kwargs meant for other providers (e.g., vLLM)
         for key in self._IGNORED_KWARGS:
             model_kwargs.pop(key, None)
@@ -277,6 +282,7 @@ class HuggingFaceProvider(InferenceProvider):
         self.supports_images = self.is_multimodal
         self.max_crops = int(max_crops)
         self.autocast_dtype = autocast_dtype
+        self.batch_size = int(batch_size)
         self.processor = None
         self.device = _get_device()
         if self.is_multimodal:
@@ -371,6 +377,151 @@ class HuggingFaceProvider(InferenceProvider):
                 kwargs["top_k"] = params.top_k
 
         return kwargs
+
+    def _ensure_padding_token(self) -> int:
+        """Return the tokenizer padding ID, deriving it from EOS when necessary."""
+        pad_token_id = getattr(self.tokenizer, "pad_token_id", None)
+        if pad_token_id is None:
+            eos_token = getattr(self.tokenizer, "eos_token", None)
+            eos_token_id = getattr(self.tokenizer, "eos_token_id", None)
+            if eos_token is None or eos_token_id is None:
+                raise ValueError("Batching Hugging Face requests requires a padding or EOS token")
+            self.tokenizer.pad_token = eos_token
+            pad_token_id = eos_token_id
+        return int(pad_token_id)
+
+    def _tokenize_text_batch(self, prompts: list[str]) -> Any:
+        """Tokenize and move a padded text batch to the model device."""
+        import torch
+
+        self._ensure_padding_token()
+        if hasattr(self.tokenizer, "padding_side"):
+            self.tokenizer.padding_side = "left"
+        encoded = self.tokenizer(prompts, padding=True, return_tensors="pt")
+        if "attention_mask" not in encoded:
+            encoded["attention_mask"] = torch.ones_like(encoded["input_ids"])
+        if hasattr(encoded, "to"):
+            return encoded.to(self.device)
+        return {
+            key: value.to(self.device) if hasattr(value, "to") else value
+            for key, value in encoded.items()
+        }
+
+    def _eos_token_ids(self) -> set[int]:
+        """Return EOS IDs used to trim padded generation rows."""
+        generation_config = getattr(self.model, "generation_config", None)
+        eos_token_id = getattr(generation_config, "eos_token_id", None)
+        if eos_token_id is None:
+            eos_token_id = getattr(self.tokenizer, "eos_token_id", None)
+        if eos_token_id is None:
+            return set()
+        if isinstance(eos_token_id, int):
+            return {eos_token_id}
+        return {int(token_id) for token_id in eos_token_id}
+
+    def _trim_generated_ids(self, generated_ids: torch.Tensor) -> torch.Tensor:
+        """Trim tokens emitted after the first EOS in a padded generation row."""
+        eos_ids = self._eos_token_ids()
+        if not eos_ids:
+            return generated_ids
+        for index, token_id in enumerate(generated_ids.tolist()):
+            if token_id in eos_ids:
+                return generated_ids[: index + 1]
+        return generated_ids
+
+    def _generation_log_probs(
+        self,
+        output_ids: torch.Tensor,
+        input_attention_mask: torch.Tensor,
+        input_width: int,
+    ) -> torch.Tensor:
+        """Compute generated-token log probabilities for a padded batch."""
+        import torch
+
+        generated_width = output_ids.shape[1] - input_width
+        if generated_width <= 0:
+            return output_ids.new_empty((output_ids.shape[0], 0, 0), dtype=torch.float32)
+
+        generated_mask = torch.ones(
+            (output_ids.shape[0], generated_width),
+            dtype=input_attention_mask.dtype,
+            device=output_ids.device,
+        )
+        attention_mask = torch.cat([input_attention_mask, generated_mask], dim=1)
+        positions = torch.arange(
+            input_width - 1,
+            output_ids.shape[1] - 1,
+            device=output_ids.device,
+            dtype=torch.long,
+        )
+        logits = self._forward_selected_logits(output_ids, attention_mask, positions)
+        return torch.log_softmax(logits, dim=-1)
+
+    def _forward_selected_logits(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        positions: torch.Tensor,
+    ) -> torch.Tensor:
+        """Return logits at selected positions without materializing the full LM head."""
+        import torch
+
+        if positions.numel() == 0:
+            return input_ids.new_empty((input_ids.shape[0], 0, 0), dtype=torch.float32)
+
+        try:
+            with torch.no_grad():
+                logits = self.model(
+                    input_ids,
+                    attention_mask=attention_mask,
+                    logits_to_keep=positions,
+                ).logits
+        except TypeError as error:
+            if "logits_to_keep" not in str(error):
+                raise
+            with torch.no_grad():
+                logits = self.model(input_ids, attention_mask=attention_mask).logits
+            return logits[:, positions, :]
+
+        if logits.shape[1] == input_ids.shape[1]:
+            return logits[:, positions, :]
+        return logits
+
+    def _build_generation_output(
+        self,
+        generated_ids: torch.Tensor,
+        log_probs: torch.Tensor | None,
+        params: SamplingParams,
+    ) -> LMOutput:
+        """Build one output row from generated tokens and optional log probabilities."""
+        gen_ids = self._trim_generated_ids(generated_ids)
+        gen_ids, text = self._truncate_at_stop(gen_ids, params.stop_sequences)
+
+        logprob_entries: list[LogProbEntry] | None = None
+        metadata: dict[str, Any] = {}
+        if len(gen_ids) > 0 and log_probs is not None:
+            logprob_entries = []
+            for i, tok in enumerate(gen_ids):
+                logprob = log_probs[i, tok].item()
+                token_str = self.tokenizer.decode(tok, skip_special_tokens=False)
+                logprob_entries.append(
+                    {
+                        "token": token_str,
+                        "logprob": logprob,
+                        "token_id": int(tok),
+                        "bytes": list(token_str.encode("utf-8")),
+                    }
+                )
+
+            sum_logits = sum(entry["logprob"] for entry in logprob_entries)
+            num_tokens = len(logprob_entries)
+            metadata = {
+                "sum_logits": sum_logits,
+                "num_tokens": num_tokens,
+                "num_tokens_all": num_tokens,
+            }
+
+        return LMOutput(text=text.strip(), logprobs=logprob_entries, metadata=metadata)
 
     def _truncate_at_stop(
         self, tokens: torch.Tensor, stop_sequences: tuple[str, ...] | None
@@ -493,59 +644,30 @@ class HuggingFaceProvider(InferenceProvider):
             )
         if self.is_multimodal:
             return self._generate_multimodal(requests, params)
-        gen_kwargs = self._build_generate_kwargs(params)
 
-        results = []
-        for request in requests:
-            prompt = request.prompt
-            encoded = self.tokenizer(prompt, return_tensors="pt").to(self.device)
-            prompt_len = encoded["input_ids"].shape[1]
+        results: list[list[LMOutput]] = [[] for _ in requests]
+        batch_size = getattr(self, "batch_size", 1)
+        for batch_start in range(0, len(requests), batch_size):
+            request_batch = requests[batch_start : batch_start + batch_size]
+            encoded = self._tokenize_text_batch([request.prompt for request in request_batch])
+            input_width = encoded["input_ids"].shape[1]
+            prompt_len = int(encoded["attention_mask"].sum(dim=1).max().item())
             gen_kwargs = self._build_generate_kwargs(params, prompt_len)
 
-            request_outputs = []
             for _ in range(params.num_samples):
                 with torch.no_grad():
-                    output_ids = self.model.generate(**encoded, **gen_kwargs)[0]
+                    output_ids = self.model.generate(**encoded, **gen_kwargs)
 
-                gen_ids = output_ids[prompt_len:]
-                gen_ids, text = self._truncate_at_stop(gen_ids, params.stop_sequences)
-
-                # Always compute logprobs for metrics
-                logprob_entries = None
-                metadata: dict[str, Any] = {}
-                if len(gen_ids) > 0:
-                    seq = torch.cat([encoded["input_ids"][0], gen_ids]).unsqueeze(0)
-                    with torch.no_grad():
-                        logits = self.model(seq).logits
-                    log_probs = torch.log_softmax(logits, dim=-1)[0]
-
-                    logprob_entries: list[LogProbEntry] = []
-                    for i, tok in enumerate(gen_ids):
-                        lp = log_probs[prompt_len + i - 1, tok].item()
-                        token_str = self.tokenizer.decode(tok, skip_special_tokens=False)
-                        logprob_entries.append(
-                            {
-                                "token": token_str,
-                                "logprob": lp,
-                                "token_id": int(tok),
-                                "bytes": list(token_str.encode("utf-8")),
-                            }
-                        )
-
-                    # Compute metadata from logprobs
-                    sum_logits = sum(entry["logprob"] for entry in logprob_entries)
-                    num_tokens = len(logprob_entries)
-                    metadata = {
-                        "sum_logits": sum_logits,
-                        "num_tokens": num_tokens,
-                        "num_tokens_all": num_tokens,
-                    }
-
-                request_outputs.append(
-                    LMOutput(text=text, logprobs=logprob_entries, metadata=metadata)
+                generated_ids = output_ids[:, input_width:]
+                log_probs = self._generation_log_probs(
+                    output_ids, encoded["attention_mask"], input_width
                 )
-
-            results.append(request_outputs)
+                for row, request_outputs in enumerate(
+                    results[batch_start : batch_start + len(request_batch)]
+                ):
+                    request_outputs.append(
+                        self._build_generation_output(generated_ids[row], log_probs[row], params)
+                    )
 
         return results
 
@@ -590,31 +712,67 @@ class HuggingFaceProvider(InferenceProvider):
                 "truncate_prompt_tokens or truncation_side has been set in the params, "
                 "but is not supported for the HuggingFaceProvider and will not be used."
             )
-        results = []
-        for request in requests:
-            request_outputs = []
+        results: list[list[LMOutput]] = [[] for _ in requests]
+        work_items: list[tuple[int, str, list[int], list[int], int]] = []
+        for request_idx, request in enumerate(requests):
             cont_prompts = request.continuation_prompts
-            for i, continuation in enumerate(request.continuations or ()):
-                prompt = cont_prompts[i] if cont_prompts else request.prompt
-                # Use shared utility for BOS handling and trailing space logic
+            for continuation_idx, continuation in enumerate(request.continuations or ()):
+                prompt = cont_prompts[continuation_idx] if cont_prompts else request.prompt
                 context_enc, continuation_enc = encode_context_and_continuation(
                     self.tokenizer, prompt, continuation
                 )
+                work_items.append(
+                    (
+                        request_idx,
+                        continuation,
+                        context_enc + continuation_enc,
+                        continuation_enc,
+                        len(context_enc),
+                    )
+                )
 
-                # Build full sequence as tensor
-                full_ids = context_enc + continuation_enc
-                full_enc = torch.tensor([full_ids], device=self.device)
-                ctx_len = len(context_enc)
+        pad_token_id = self._ensure_padding_token()
+        for batch_start in range(0, len(work_items), getattr(self, "batch_size", 1)):
+            batch = work_items[batch_start : batch_start + getattr(self, "batch_size", 1)]
+            max_length = max(len(item[2]) for item in batch)
+            input_ids = torch.full(
+                (len(batch), max_length),
+                pad_token_id,
+                dtype=torch.long,
+                device=self.device,
+            )
+            attention_mask = torch.zeros_like(input_ids)
+            offsets: list[int] = []
+            for row, (_, _, full_ids, _, _) in enumerate(batch):
+                offset = max_length - len(full_ids)
+                offsets.append(offset)
+                token_ids = torch.tensor(full_ids, dtype=torch.long, device=self.device)
+                input_ids[row, offset:] = token_ids
+                attention_mask[row, offset:] = 1
 
-                with torch.no_grad():
-                    logits = self.model(full_enc).logits
+            positions = sorted(
+                {
+                    offset + context_len + continuation_idx - 1
+                    for offset, (_, _, _, continuation_enc, context_len) in zip(
+                        offsets, batch, strict=True
+                    )
+                    for continuation_idx in range(len(continuation_enc))
+                }
+            )
+            position_tensor = torch.tensor(positions, dtype=torch.long, device=self.device)
+            logits = self._forward_selected_logits(input_ids, attention_mask, position_tensor)
+            log_probs = torch.log_softmax(logits, dim=-1)
+            position_indices = {position: index for index, position in enumerate(positions)}
 
-                log_probs = torch.log_softmax(logits, dim=-1)[0]
-
+            for row, (request_idx, continuation, _, continuation_enc, context_len) in enumerate(
+                batch
+            ):
                 logprob_entries: list[LogProbEntry] = []
                 total = 0.0
+                offset = offsets[row]
                 for j, tok in enumerate(continuation_enc):
-                    lp = log_probs[ctx_len + j - 1, tok].item()
+                    position = offset + context_len + j - 1
+                    lp = log_probs[row, position_indices[position], tok].item()
                     token_str = self.tokenizer.decode(tok, skip_special_tokens=False)
                     logprob_entries.append(
                         {
@@ -626,15 +784,13 @@ class HuggingFaceProvider(InferenceProvider):
                     )
                     total += lp
 
-                request_outputs.append(
+                results[request_idx].append(
                     LMOutput(
                         text=continuation,
                         logprobs=logprob_entries,
                         metadata={"total_logprob": total},
                     )
                 )
-
-            results.append(request_outputs)
 
         return results
 

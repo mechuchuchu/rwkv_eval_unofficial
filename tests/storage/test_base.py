@@ -165,6 +165,7 @@ class TestComputeModelHash:
             "kwargs": {
                 "enable_expert_parallel": True,
                 "enable_prefix_caching": False,
+                "batch_size": 8,
                 "force_download": True,
                 "gpu_memory_utilization": 0.6,
                 "max_num_batched_tokens": 8192,

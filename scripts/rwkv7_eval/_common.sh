@@ -7,6 +7,7 @@ set -euo pipefail
 : "${OUTPUT_ROOT:=/workspace/results/rwkv7-olmo-eval}"
 : "${RWKV_TRANSFORMERS_REQUIREMENT:=transformers>=5.15,<5.16}"
 : "${DTYPE:=bfloat16}"
+: "${BATCH_SIZE:=8}"
 : "${NUM_GPUS:=1}"
 : "${PARALLELISM:=16}"
 export HF_HOME
@@ -35,6 +36,7 @@ run_eval() {
         -o provider.kind=hf \
         -o provider.trust_remote_code=true \
         -o "provider.dtype=${DTYPE}" \
+        -o "provider.kwargs.batch_size=${BATCH_SIZE}" \
         -m "${MODEL_PATH}" \
         -t "${task_spec}" \
         "${task_overrides[@]}" \

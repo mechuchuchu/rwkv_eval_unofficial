@@ -23,7 +23,12 @@ Override the model path or output directory with environment variables:
 export MODEL_PATH=/path/to/model
 export OUTPUT_ROOT=/workspace/results/my-run
 export DTYPE=bfloat16
+export BATCH_SIZE=8
 ```
+
+Text requests are processed in batches by the Hugging Face provider. Lower
+`BATCH_SIZE` if a benchmark's prompts or generation lengths exceed available
+GPU memory.
 
 The launcher adds a `transformers>=5.15,<5.16` overlay because the bundled
 RWKV-7 model code requires the multi-state cache API introduced in Transformers
